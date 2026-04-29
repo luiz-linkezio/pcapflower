@@ -147,3 +147,51 @@ def test_flow_values_in_csv(tmp_path):
     assert row["src_ip"] == "10.0.0.1"
     assert row["dst_port"] == "80"
     assert float(row["flow_duration"]) == pytest.approx(0.5)
+
+
+# ── parallelism ───────────────────────────────────────────────────────────────
+
+def _multi_flow_pcap(tmp_path):
+    """Write a pcap with 4 distinct flows and return its path."""
+    pcap = tmp_path / "multi.pcap"
+    pkts = [
+        (1000.0, _tcp_pkt("1.1.1.1", "2.2.2.2", 100, 80, flags=0x01)),
+        (1000.1, _tcp_pkt("3.3.3.3", "4.4.4.4", 200, 443, flags=0x01)),
+        (1000.2, _tcp_pkt("5.5.5.5", "6.6.6.6", 300, 22, flags=0x01)),
+        (1000.3, _tcp_pkt("7.7.7.7", "8.8.8.8", 400, 8080, flags=0x01)),
+    ]
+    _write_pcap(str(pcap), pkts)
+    return pcap
+
+
+def test_parallel_same_row_count_as_single(tmp_path):
+    pcap = _multi_flow_pcap(tmp_path)
+    out1 = tmp_path / "single.csv"
+    out2 = tmp_path / "parallel.csv"
+    n1 = convert_pcap_to_csv(str(pcap), str(out1), n_jobs=1)
+    n2 = convert_pcap_to_csv(str(pcap), str(out2), n_jobs=2)
+    assert n1 == n2
+
+
+def test_parallel_n_jobs_minus_one(tmp_path):
+    pcap = _multi_flow_pcap(tmp_path)
+    out = tmp_path / "out.csv"
+    n = convert_pcap_to_csv(str(pcap), str(out), n_jobs=-1)
+    assert n == 4
+
+
+def test_parallel_output_has_correct_columns(tmp_path):
+    pcap = _multi_flow_pcap(tmp_path)
+    out = tmp_path / "out.csv"
+    convert_pcap_to_csv(str(pcap), str(out), n_jobs=2)
+    with open(out) as fh:
+        reader = csv.DictReader(fh)
+        list(reader)
+        assert len(reader.fieldnames) == 82
+
+
+def test_n_jobs_zero_raises(tmp_path):
+    pcap = tmp_path / "x.pcap"
+    _write_pcap(str(pcap), [])
+    with pytest.raises(ValueError):
+        convert_pcap_to_csv(str(pcap), str(tmp_path / "out.csv"), n_jobs=0)
