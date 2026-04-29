@@ -17,4 +17,4 @@ Public API
 from ._convert import convert_pcap_to_csv
 
 __all__ = ["convert_pcap_to_csv"]
-__version__ = "1.0.0"
+__version__ = "1.1.0"
