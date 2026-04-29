@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/luiz-linkezio/pcapflower/main/assets/icon.png" alt="pcapflower" width="128" />
+  <img src="assets/icon.png" alt="pcapflower" width="128" />
 </p>
 
 <h1 align="center">pcapflower</h1>
